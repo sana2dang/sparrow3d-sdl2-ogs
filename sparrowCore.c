@@ -292,7 +292,7 @@ PREFIX void spResizeWindow( int x, int y, int fullscreen, int allowresize )
                               SDL_WINDOWPOS_UNDEFINED,  
                               SDL_WINDOWPOS_UNDEFINED,  
                               x,y,  
-                              SDL_WINDOW_OPENGL/* | SDL_WINDOW_FULLSCREEN*/);  
+                              SDL_WINDOW_OPENGL | SDL_WINDOW_FULLSCREEN);  
     sdlSurface = SDL_GetWindowSurface(sdlWindow);
 	spWindow = SDL_CreateRGBSurface(SDL_SWSURFACE, x, y, 16, 0, 0, 0, 0);
 #else	
