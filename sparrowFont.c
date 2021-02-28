@@ -433,7 +433,11 @@ PREFIX void spFontChangeButton( spFontPointer font, spLetterPointer letter, Uint
 	DestR.y = (height-surface->h+1)/2;
 	DestR.w = surface->w;
 	DestR.h = surface->h;
+#ifdef TRNGAJE_OGS
+	SDL_SetColorKey( surface, SDL_TRUE, SP_ALPHA_COLOR );
+#else
 	SDL_SetColorKey( surface, SDL_SRCCOLORKEY, SP_ALPHA_COLOR );
+#endif
 	SDL_BlitSurface( surface, NULL, letter->surface, &DestR );
 	SDL_FreeSurface( surface );
 	letter->height = height;

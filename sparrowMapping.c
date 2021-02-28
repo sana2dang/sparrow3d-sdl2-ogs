@@ -57,7 +57,11 @@ const unsigned char __spMapOver255[87] = {
 	153, 154, 155, 156, 157, 158, 159
 };
 
+#ifdef TRNGAJE_OGS
+PREFIX unsigned char spMapSDLKeyToChar(SDL_Keycode key)
+#else
 PREFIX unsigned char spMapSDLKeyToChar(SDLKey key)
+#endif
 {
 	if (key == '<')
 		return __spMapOver255[83];

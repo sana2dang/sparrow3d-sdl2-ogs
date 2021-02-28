@@ -379,7 +379,11 @@ PREFIX void spMapPoolAddForDesktopHack();
 
 PREFIX void spMapDesktopHack(int value);
 
+#ifdef TRNGAJE_OGS
+PREFIX unsigned char spMapSDLKeyToChar(SDL_Keycode key);
+#else
 PREFIX unsigned char spMapSDLKeyToChar(SDLKey key);
+#endif
 
 PREFIX void spMapSetMapSet(int set);
 #endif

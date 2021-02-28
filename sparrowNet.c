@@ -324,7 +324,11 @@ PREFIX SDL_Thread* spNetReceiveTCPUnblocked(spNetTCPConnection connection,void* 
 	tcpData->mutex = SDL_CreateMutex();
 	tcpData->next = firstReceiving;
 	firstReceiving = tcpData;
+#ifdef TRNGAJE_OGS
+	tcpData->thread = SDL_CreateThread(tcpReceiveThread,NULL,tcpData);
+#else
 	tcpData->thread = SDL_CreateThread(tcpReceiveThread,tcpData);
+#endif
 	return tcpData->thread;
 }
 
@@ -356,7 +360,11 @@ PREFIX SDL_Thread* spNetReceiveHTTPUnblocked(spNetTCPConnection connection,char*
 	tcpData->mutex = SDL_CreateMutex();
 	tcpData->next = firstReceiving;
 	firstReceiving = tcpData;
+#ifdef TRNGAJE_OGS
+	tcpData->thread = SDL_CreateThread(tcpReceiveThread_http,NULL,tcpData);
+#else
 	tcpData->thread = SDL_CreateThread(tcpReceiveThread_http,tcpData);
+#endif
 	return tcpData->thread;
 }
 
@@ -605,7 +613,11 @@ void write_to_cache(char* game,char* system,char* prid,int score,int lock)
 int spNetC4AUberThread(getgenericPointer data)
 {
 	int startTime = SDL_GetTicks();
+#ifdef TRNGAJE_OGS
+	SDL_Thread* thread = SDL_CreateThread(data->function, NULL, data);
+#else
 	SDL_Thread* thread = SDL_CreateThread(data->function,data);
+#endif
 	while (1)
 	{
 	#ifdef REALGP2X
@@ -631,7 +643,11 @@ int spNetC4AUberThread(getgenericPointer data)
 		{
 			//Waiting for the write cache mutex ANYWAY.
 			SDL_mutexP(spCacheMutex);
+#ifdef TRNGAJE_OGS
+			SDL_WaitThread(thread, NULL);
+#else
 			SDL_KillThread(thread);
+#endif
 			SDL_mutexV(spCacheMutex);
 			data->task->result = 1;
 			SDL_mutexP(data->task->statusMutex);
@@ -992,11 +1008,15 @@ PREFIX int spNetC4AGetGame(spNetC4AGamePointer* gameList,int timeOut)
 		spGlobalC4ATask->dataPointer = data;
 		spGlobalC4ATask->timeOut = timeOut;
 		spGlobalC4ATask->threadStatus = 1;
+#ifdef TRNGAJE_OGS
+		spGlobalC4ATask->thread = SDL_CreateThread((int (*)(void *))spNetC4AUberThread, NULL, data);
+#else
 		#ifdef _MSC_VER
 			spGlobalC4ATask->thread = SDL_CreateThread((int (__cdecl *)(void *))spNetC4AUberThread,data);
 		#else
 			spGlobalC4ATask->thread = SDL_CreateThread((int (*)(void *))spNetC4AUberThread,data);
 		#endif
+#endif
 		return 0;
 	}
 	SDL_mutexV(spGlobalC4ATask->statusMutex);
@@ -1016,11 +1036,16 @@ PREFIX spNetC4ATaskPointer spNetC4AGetGameParallel(spNetC4AGamePointer* gameList
 	task->dataPointer = data;
 	task->timeOut = timeOut;
 	task->threadStatus = 1;
+
+#ifdef TRNGAJE_OGS
+	task->thread = SDL_CreateThread((int (*)(void *))spNetC4AUberThread, NULL, data);
+#else
 	#ifdef _MSC_VER
 		task->thread = SDL_CreateThread((int (__cdecl *)(void *))spNetC4AUberThread,data);
 	#else
 		task->thread = SDL_CreateThread((int (*)(void *))spNetC4AUberThread,data);
 	#endif
+#endif
 	return task;
 }
 
@@ -1185,11 +1210,16 @@ PREFIX int spNetC4AGetScore(spNetC4AScorePointer* scoreList,spNetC4AProfilePoint
 		spGlobalC4ATask->dataPointer = data;
 		spGlobalC4ATask->timeOut = timeOut;
 		spGlobalC4ATask->threadStatus = 1;
+
+#ifdef TRNGAJE_OGS
+		spGlobalC4ATask->thread = SDL_CreateThread((int (*)(void *))spNetC4AUberThread,NULL,data);
+#else
 		#ifdef _MSC_VER
 			spGlobalC4ATask->thread = SDL_CreateThread((int (__cdecl *)(void *))spNetC4AUberThread,data);
 		#else
 			spGlobalC4ATask->thread = SDL_CreateThread((int (*)(void *))spNetC4AUberThread,data);
 		#endif
+#endif
 		return 0;
 	}
 	SDL_mutexV(spGlobalC4ATask->statusMutex);
@@ -1218,11 +1248,15 @@ PREFIX int spNetC4AGetScoreOfMonth(spNetC4AScorePointer* scoreList,spNetC4AProfi
 		spGlobalC4ATask->dataPointer = data;
 		spGlobalC4ATask->timeOut = timeOut;
 		spGlobalC4ATask->threadStatus = 1;
+#ifdef TRNGAJE_OGS
+		spGlobalC4ATask->thread = SDL_CreateThread((int (*)(void *))spNetC4AUberThread,NULL,data);
+#else
 		#ifdef _MSC_VER
 			spGlobalC4ATask->thread = SDL_CreateThread((int (__cdecl *)(void *))spNetC4AUberThread,data);
 		#else
 			spGlobalC4ATask->thread = SDL_CreateThread((int (*)(void *))spNetC4AUberThread,data);
 		#endif
+#endif
 		return 0;
 	}
 	SDL_mutexV(spGlobalC4ATask->statusMutex);
@@ -1246,11 +1280,15 @@ PREFIX spNetC4ATaskPointer spNetC4AGetScoreParallel(spNetC4AScorePointer* scoreL
 	task->dataPointer = data;
 	task->timeOut = timeOut;
 	task->threadStatus = 1;
+#ifdef TRNGAJE_OGS
+	task->thread = SDL_CreateThread((int (*)(void *))spNetC4AUberThread,NULL,data);
+#else
 	#ifdef _MSC_VER
 		task->thread = SDL_CreateThread((int (__cdecl *)(void *))spNetC4AUberThread,data);
 	#else
 		task->thread = SDL_CreateThread((int (*)(void *))spNetC4AUberThread,data);
 	#endif
+#endif
 	return task;
 }
 
@@ -1274,11 +1312,15 @@ PREFIX spNetC4ATaskPointer spNetC4AGetScoreOfMonthParallel(spNetC4AScorePointer*
 	task->dataPointer = data;
 	task->timeOut = timeOut;
 	task->threadStatus = 1;
+#ifdef TRNGAJE_OGS
+	task->thread = SDL_CreateThread((int (*)(void *))spNetC4AUberThread,NULL,data);
+#else
 	#ifdef _MSC_VER
 		task->thread = SDL_CreateThread((int (__cdecl *)(void *))spNetC4AUberThread,data);
 	#else
 		task->thread = SDL_CreateThread((int (*)(void *))spNetC4AUberThread,data);
 	#endif
+#endif
 	return task;
 }
 
@@ -1516,11 +1558,15 @@ PREFIX int spNetC4ACommitScore(spNetC4AProfilePointer profile,char* game,int sco
 		spGlobalC4ATask->dataPointer = data;
 		spGlobalC4ATask->timeOut = timeOut;
 		spGlobalC4ATask->threadStatus = 1;
+#ifdef TRNGAJE_OGS
+		spGlobalC4ATask->thread = SDL_CreateThread((int (*)(void *))spNetC4AUberThread,NULL,data);
+#else
 		#ifdef _MSC_VER
 			spGlobalC4ATask->thread = SDL_CreateThread((int (__cdecl *)(void *))spNetC4AUberThread,data);
 		#else
 			spGlobalC4ATask->thread = SDL_CreateThread((int (*)(void *))spNetC4AUberThread,data);
 		#endif
+#endif
 		return already;
 	}
 	SDL_mutexV(spGlobalC4ATask->statusMutex);
@@ -1561,11 +1607,15 @@ PREFIX spNetC4ATaskPointer spNetC4ACommitScoreParallel(spNetC4AProfilePointer pr
 	task->dataPointer = data;
 	task->timeOut = timeOut;
 	task->threadStatus = 1;
+#ifdef TRNGAJE_OGS
+	task->thread = SDL_CreateThread((int (*)(void *))spNetC4AUberThread,NULL,data);
+#else
 	#ifdef _MSC_VER
 		task->thread = SDL_CreateThread((int (__cdecl *)(void *))spNetC4AUberThread,data);
 	#else
 		task->thread = SDL_CreateThread((int (*)(void *))spNetC4AUberThread,data);
 	#endif
+#endif
 	return task;
 }
 
@@ -1769,11 +1819,15 @@ PREFIX int spNetC4ACreateProfile(spNetC4AProfilePointer* profile, char* longname
 		spGlobalC4ATask->dataPointer = data;
 		spGlobalC4ATask->timeOut = timeOut;
 		spGlobalC4ATask->threadStatus = 1;
+#ifdef TRNGAJE_OGS
+		spGlobalC4ATask->thread = SDL_CreateThread((int (*)(void *))spNetC4AUberThread,NULL,data);
+#else
 		#ifdef _MSC_VER
 			spGlobalC4ATask->thread = SDL_CreateThread((int (__cdecl *)(void *))spNetC4AUberThread,data);
 		#else
 			spGlobalC4ATask->thread = SDL_CreateThread((int (*)(void *))spNetC4AUberThread,data);
 		#endif
+#endif
 		return 0;
 	}
 	SDL_mutexV(spGlobalC4ATask->statusMutex);
@@ -1847,11 +1901,15 @@ PREFIX int spNetC4ADeleteAccount(spNetC4AProfilePointer* profile,int deleteFile,
 		spGlobalC4ATask->dataPointer = data;
 		spGlobalC4ATask->timeOut = timeOut;
 		spGlobalC4ATask->threadStatus = 1;
+#ifdef TRNGAJE_OGS
+		spGlobalC4ATask->thread = SDL_CreateThread((int (*)(void *))spNetC4AUberThread,NULL,data);
+#else
 		#ifdef _MSC_VER
 			spGlobalC4ATask->thread = SDL_CreateThread((int (__cdecl *)(void *))spNetC4AUberThread,data);
 		#else
 			spGlobalC4ATask->thread = SDL_CreateThread((int (*)(void *))spNetC4AUberThread,data);
 		#endif
+#endif
 		return 0;
 	}
 	SDL_mutexV(spGlobalC4ATask->statusMutex);
@@ -1947,11 +2005,15 @@ PREFIX int spNetC4AEditProfile(spNetC4AProfilePointer* profile,char* longname,ch
 		spGlobalC4ATask->dataPointer = data;
 		spGlobalC4ATask->timeOut = timeOut;
 		spGlobalC4ATask->threadStatus = 1;
+#ifdef TRNGAJE_OGS
+		spGlobalC4ATask->thread = SDL_CreateThread((int (*)(void *))spNetC4AUberThread,NULL,data);
+#else
 		#ifdef _MSC_VER
 			spGlobalC4ATask->thread = SDL_CreateThread((int (__cdecl *)(void *))spNetC4AUberThread,data);
 		#else
 			spGlobalC4ATask->thread = SDL_CreateThread((int (*)(void *))spNetC4AUberThread,data);
 		#endif
+#endif
 		return 0;
 	}
 	SDL_mutexV(spGlobalC4ATask->statusMutex);
@@ -2624,7 +2686,11 @@ int __irc_server_thread(void* data)
 			if (finish_flag)
 			{
 				if (tcp_thread)
+#ifdef TRNGAJE_OGS
+					SDL_WaitThread(tcp_thread, NULL);
+#else
 					SDL_KillThread(tcp_thread);
+#endif
 				break;
 			}
 		}
@@ -2677,7 +2743,11 @@ PREFIX spNetIRCServerPointer spNetIRCConnectServer(char* name,Uint16 port,char* 
 	server->finish_flag = 0;
 	server->first_channel = NULL;
 	server->last_channel = NULL;
+#ifdef TRNGAJE_OGS
+	server->thread = SDL_CreateThread(__irc_server_thread,NULL,server);
+#else
 	server->thread = SDL_CreateThread(__irc_server_thread,server);
+#endif
 	return server;
 }
 

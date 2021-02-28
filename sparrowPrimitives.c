@@ -2080,17 +2080,29 @@ PREFIX void spBlitSurfacePart( Sint32 x, Sint32 y, Sint32 z, SDL_Surface* surfac
 					src.y = sy;
 					src.w = w;
 					src.h = h;
+#ifdef TRNGAJE_OGS
+					SDL_SetColorKey( surface, SDL_TRUE, SP_ALPHA_COLOR );
+#else
 					SDL_SetColorKey( surface, SDL_SRCCOLORKEY, SP_ALPHA_COLOR );
+#endif
 					#ifndef NO_BLENDING
 					if (spBlending != SP_ONE)
+#ifdef TRNGAJE_OGS
+						SDL_SetSurfaceAlphaMod( surface, spBlending * SDL_ALPHA_OPAQUE >> SP_ACCURACY);
+#else
 						SDL_SetAlpha( surface, SDL_SRCALPHA, spBlending * SDL_ALPHA_OPAQUE >> SP_ACCURACY);
+#endif
 					#endif
 					spUnlockRenderTarget();
 					SDL_BlitSurface( surface, &src, spTarget, &dest );
 					spLockRenderTarget();
 					#ifndef NO_BLENDING
 					if (spBlending != SP_ONE)
+#ifdef TRNGAJE_OGS
+						SDL_SetSurfaceAlphaMod( surface, SDL_ALPHA_OPAQUE );
+#else
 						SDL_SetAlpha( surface, 0, SDL_ALPHA_OPAQUE );
+#endif
 					#endif
 				}
 			}
@@ -2185,17 +2197,29 @@ PREFIX void spBlitSurfacePart( Sint32 x, Sint32 y, Sint32 z, SDL_Surface* surfac
 					src.y = sy;
 					src.w = w;
 					src.h = h;
+#ifdef TRNGAJE_OGS
+					SDL_SetColorKey( surface, SDL_TRUE, SP_ALPHA_COLOR );
+#else
 					SDL_SetColorKey( surface, SDL_SRCCOLORKEY, SP_ALPHA_COLOR );
+#endif
 					#ifndef NO_BLENDING
 					if (spBlending != SP_ONE)
+#ifdef TRNGAJE_OGS
+						SDL_SetSurfaceAlphaMod( surface, spBlending * SDL_ALPHA_OPAQUE >> SP_ACCURACY);
+#else
 						SDL_SetAlpha( surface, SDL_SRCALPHA, spBlending * SDL_ALPHA_OPAQUE >> SP_ACCURACY);
+#endif					
 					#endif
 					spUnlockRenderTarget();
 					SDL_BlitSurface( surface, &src, spTarget, &dest );
 					spLockRenderTarget();
 					#ifndef NO_BLENDING
 					if (spBlending != SP_ONE)
+#ifdef TRNGAJE_OGS
+						SDL_SetSurfaceAlphaMod( surface, SDL_ALPHA_OPAQUE );
+#else
 						SDL_SetAlpha( surface, 0, SDL_ALPHA_OPAQUE );
+#endif
 					#endif
 				}
 			}
@@ -2334,14 +2358,22 @@ PREFIX void spBlitSurfacePart( Sint32 x, Sint32 y, Sint32 z, SDL_Surface* surfac
 					SDL_SetColorKey( surface, 0, 0 );
 					#ifndef NO_BLENDING
 					if (spBlending != SP_ONE)
+#ifdef TRNGAJE_OGS
+						SDL_SetSurfaceAlphaMod( surface, spBlending * SDL_ALPHA_OPAQUE >> SP_ACCURACY);
+#else
 						SDL_SetAlpha( surface, SDL_SRCALPHA, spBlending * SDL_ALPHA_OPAQUE >> SP_ACCURACY);
+#endif
 					#endif
 					spUnlockRenderTarget();
 					SDL_BlitSurface( surface, &src, spTarget, &dest );
 					spLockRenderTarget();
 					#ifndef NO_BLENDING
 					if (spBlending != SP_ONE)
+#ifdef TRNGAJE_OGS
+						SDL_SetSurfaceAlphaMod( surface, SDL_ALPHA_OPAQUE );
+#else
 						SDL_SetAlpha( surface, 0, SDL_ALPHA_OPAQUE );
+#endif
 					#endif
 				}
 			}
@@ -2439,14 +2471,22 @@ PREFIX void spBlitSurfacePart( Sint32 x, Sint32 y, Sint32 z, SDL_Surface* surfac
 					SDL_SetColorKey( surface, 0, 0 );
 					#ifndef NO_BLENDING
 					if (spBlending != SP_ONE)
+#ifdef TRNGAJE_OGS
+						SDL_SetSurfaceAlphaMod( surface, spBlending * SDL_ALPHA_OPAQUE >> SP_ACCURACY);
+#else
 						SDL_SetAlpha( surface, SDL_SRCALPHA, spBlending * SDL_ALPHA_OPAQUE >> SP_ACCURACY);
+#endif
 					#endif
 					spUnlockRenderTarget();
 					SDL_BlitSurface( surface, &src, spTarget, &dest );
 					spLockRenderTarget();
 					#ifndef NO_BLENDING
 					if (spBlending != SP_ONE)
+#ifdef TRNGAJE_OGS
+						SDL_SetSurfaceAlphaMod( surface, SDL_ALPHA_OPAQUE );
+#else
 						SDL_SetAlpha( surface, 0, SDL_ALPHA_OPAQUE );
+#endif
 					#endif
 				}
 			}
@@ -3890,7 +3930,11 @@ void spStartDrawingThread( void )
 	spScanLineBegin = 0;
 	spScanLineEnd = 0;
 	spScanLineMessage = 1;
+#ifdef TRNGAJE_OGS
+	spScanLineThread = SDL_CreateThread(sp_intern_drawing_thread, "ScanLineThread", NULL);
+#else
 	spScanLineThread = SDL_CreateThread(sp_intern_drawing_thread, NULL);
+#endif
 }
 
 PREFIX void spDrawInExtraThread(int value)

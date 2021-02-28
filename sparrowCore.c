@@ -63,8 +63,13 @@ Sint32 spVirtualKeyboardPositionY;
 Sint32 spVirtualKeyboardTime = 0;
 Sint32 spVirtualKeyboardShift = 0;
 //for long pressing of a key
+#ifdef TRNGAJE_OGS
+SDL_Keysym spLastKey = {0,(SDL_Keycode)0,0,0};
+SDL_Keysym spVirtualLastKey = {0,(SDL_Keycode)0,0,0};
+#else
 SDL_keysym spLastKey = {0,(SDLKey)0,(SDLMod)0,0};
 SDL_keysym spVirtualLastKey = {0,(SDLKey)0,(SDLMod)0,0};
+#endif
 int spLastKeyCountDown = 0;
 int spVirtualLastKeyCountDown = 0;
 char spVirtualKeyboardMap[3][20] =
@@ -102,6 +107,11 @@ sp_cache_pointer sp_cache_surface[SP_CACHE_SIZE];
 sp_cache_pointer sp_first_cache_line = NULL;
 
 int spCoreIsInitialized = 0;
+
+#ifdef TRNGAJE_OGS
+SDL_Window* sdlWindow;
+SDL_Surface* sdlSurface;
+#endif
 
 PREFIX void spSetupWindowAttributes(char* title,char* iconName)
 {
@@ -148,6 +158,9 @@ PREFIX void spInitCore( void )
 #elif defined GCW
 	spWindowX = 320;
 	spWindowY = 240;
+#elif defined TRNGAJE_OGS
+	spWindowX = 854;
+	spWindowY = 480;
 #else
 	//only setting, if now default value set!
 	if ( !spWindowX )
@@ -157,6 +170,7 @@ PREFIX void spInitCore( void )
 #endif
 	spZoom = SP_ONE;
 	SDL_Init( SDL_INIT_VIDEO | SDL_INIT_JOYSTICK | SDL_INIT_AUDIO );
+#ifndef TRNGAJE_OGS
 	if (spWindowName[0])
 		SDL_WM_SetCaption(spWindowName,NULL);
 	if (spIconName[0])
@@ -167,6 +181,7 @@ PREFIX void spInitCore( void )
 		else
 			printf("%s does not exist.\n",spIconName);
 	}
+#endif
 	spJoy = NULL;
 	//#ifdef MOBILE_DEVICE
 	printf( "Found %i Joysticks\n", SDL_NumJoysticks() );
@@ -176,6 +191,15 @@ PREFIX void spInitCore( void )
 		for ( i = 0; i < SDL_NumJoysticks(); i++ )
 		{
 			spJoy[i] = SDL_JoystickOpen( i );
+#ifdef TRNGAJE_OGS
+			if ( strcmp(SDL_JoystickName( spJoy[i] ),"VirtualBox USB Tablet") == 0 || strcmp(SDL_JoystickName( spJoy[i] ),"VirtualBox mouse integration") == 0)
+			{
+				printf( "  Ignored Joystick %i (%s) because of Virtualbox\n", i, SDL_JoystickName( spJoy[i] ) );
+				SDL_JoystickClose( spJoy[i] );
+				spJoy[i] = NULL;
+			}
+			else
+#else			
 			if ( strcmp(SDL_JoystickName( i ),"VirtualBox USB Tablet") == 0 || strcmp(SDL_JoystickName( i ),"VirtualBox mouse integration") == 0)
 			{
 				printf( "  Ignored Joystick %i (%s) because of Virtualbox\n", i, SDL_JoystickName( i ) );
@@ -183,7 +207,14 @@ PREFIX void spInitCore( void )
 				spJoy[i] = NULL;
 			}
 			else
+#endif
+			{
+#ifdef TRNGAJE_OGS
+				printf( "  Opened Joystick %i (%s)\n", i, SDL_JoystickName( spJoy[i] ) );
+#else				
 				printf( "  Opened Joystick %i (%s)\n", i, SDL_JoystickName( i ) );
+#endif
+			}
 		}
 	}
 	//#endif
@@ -255,6 +286,16 @@ PREFIX void spResizeWindow( int x, int y, int fullscreen, int allowresize )
 		spSelectRenderTarget(NULL);
 		recallSelectRenderTarget = 1;
 	}
+#ifdef TRNGAJE_OGS
+	spScreen = NULL;
+	sdlWindow = SDL_CreateWindow("sparrowCore",  
+                              SDL_WINDOWPOS_UNDEFINED,  
+                              SDL_WINDOWPOS_UNDEFINED,  
+                              x,y,  
+                              SDL_WINDOW_OPENGL/* | SDL_WINDOW_FULLSCREEN*/);  
+    sdlSurface = SDL_GetWindowSurface(sdlWindow);
+	spWindow = SDL_CreateRGBSurface(SDL_SWSURFACE, x, y, 16, 0, 0, 0, 0);
+#else	
 #if defined DOUBLEBUFFERING_BLIT || defined DOUBLEBUFFERING_BLIT_AND_FLIP
 	spScreen = SDL_SetVideoMode( x, y, 16, SP_SURFACE_FLAGS | SDL_FULLSCREEN );
 	SDL_Surface* surface = SDL_CreateRGBSurface( SP_SURFACE_FLAGS, x, y, 16, 0xFFFF, 0xFFFF, 0xFFFF, 0 );
@@ -267,6 +308,8 @@ PREFIX void spResizeWindow( int x, int y, int fullscreen, int allowresize )
 	#else
 		spWindow = SDL_SetVideoMode( x, y, 16, SP_SURFACE_FLAGS | SDL_DOUBLEBUF | ( fullscreen ? SDL_FULLSCREEN : 0 ) );
 	#endif
+#endif
+
 #endif
 	if ( x % 2 != 0 )
 		spWindowX = x + 1;
@@ -354,7 +397,11 @@ static void spInternalCleanVirtualKeyboard( void )
 	SDL_BlitSurface( spVirtualKeyboardInternal[spVirtualKeyboardShift], &src, spVirtualKeyboard[spVirtualKeyboardShift], &dest );
 }
 
+#ifdef TRNGAJE_OGS
+static void spHandleKeyboardInput( const SDL_Keysym pressedKey)
+#else
 static void spHandleKeyboardInput( const SDL_keysym pressedKey)
+#endif
 {
 	if ( pressedKey.sym == SDLK_BACKSPACE )
 	{
@@ -391,7 +438,11 @@ static void spHandleKeyboardInput( const SDL_keysym pressedKey)
 	}
 	else if ( pressedKey.sym >= SDLK_SPACE )
 	{
+#ifdef TRNGAJE_OGS
+		Uint16 c = pressedKey.sym;
+#else
 		Uint16 c = pressedKey.unicode;
+#endif
 		char temp[5];
 		spFontGetUTF8FromUnicode( c, temp, 5 );
 		int s = strlen( temp );
@@ -728,7 +779,9 @@ inline static int spHandleEvent( void ( *spEvent )( SDL_Event *e ) )
 				#if (!(defined GCW)) && (!(defined DINGUX))
 					if ( spGenericInput.keyboard.buffer )
 					{
+#ifndef TRNGAJE_OGS
 						spLastKey.unicode = 0;
+#endif
 						spLastKeyCountDown = 0;
 					}
 				#endif
@@ -933,13 +986,68 @@ inline static int spHandleEvent( void ( *spEvent )( SDL_Event *e ) )
 					spLastAxisType = 1;
 				}
 				break;
+#ifdef TRNGAJE_OGS
+			case SDL_JOYHATMOTION:
+				if (event.jhat.value == SDL_HAT_CENTERED) {
+					spGenericInput.axis[0] = 0;
+					sp_axis_was_used[0] = 0;
+					
+					spGenericInput.axis[1] = 0;
+					sp_axis_was_used[1] = 0;
+					spLastAxisType = 1;
+				}
+				else 
+				{
+					if (event.jhat.value & SDL_HAT_LEFT) 
+					{
+						spGenericInput.axis[0] = -1;
+						sp_axis_was_used[0] = -1;
+						spLastAxisType = 1;
+					}
+					else if (event.jhat.value & SDL_HAT_RIGHT) 
+					{
+						spGenericInput.axis[0] = 1;
+						sp_axis_was_used[0] = 1;
+						spLastAxisType = 1;
+					}
+					else
+					{
+						spGenericInput.axis[0] = 0;
+						sp_axis_was_used[0] = 0;
+						spLastAxisType = 1;						
+					}
+					
+					if (event.jhat.value & SDL_HAT_UP) 
+					{
+						spGenericInput.axis[1] = -1;
+						sp_axis_was_used[1] = -1;
+						spLastAxisType = 1;
+					}
+					else if (event.jhat.value & SDL_HAT_DOWN) 
+					{
+						spGenericInput.axis[1] = 1;
+						sp_axis_was_used[1] = 1;
+						spLastAxisType = 1;
+					}
+					else
+					{
+						spGenericInput.axis[1] = 0;
+						sp_axis_was_used[1] = 0;
+						spLastAxisType = 1;						
+					}
+
+				}		
+				break;
+#endif
 			case SDL_QUIT:
 				spDone = 1;
 				break;
+#ifndef TRNGAJE_OGS
 			case SDL_VIDEORESIZE:
 				spResizeWindow( event.resize.w, event.resize.h, 0, (spWindow->flags & SDL_RESIZABLE ? 1 : 0) );
 				result = 1;
 				break;
+#endif
 		}
 		if ( spEvent )
 			spEvent( &event );
@@ -996,6 +1104,7 @@ inline void spUpdateAxis( int axis )
 
 void spHandleFakeKeyboard( int steps )
 {
+#ifndef TRNGAJE_OGS
 	if (spLastKey.unicode != 0)
 	{
 		spLastKeyCountDown -= steps;
@@ -1005,6 +1114,7 @@ void spHandleFakeKeyboard( int steps )
 			spHandleKeyboardInput(spLastKey);
 		}
 	}
+#endif
 }
 
 int spShiftStillPressed = 0;
@@ -1026,10 +1136,15 @@ void spClickVirtualKey(int steps,int x,int y)
 	if (spVirtualKeyboardShift)
 		ptr = (char*)spVirtualKeyboardMapShift;
 
+#ifdef TRNGAJE_OGS
+	SDL_Keysym key = {spVirtualKeyboardMap[y][x],
+		(SDL_Keycode)spVirtualKeyboardMap[y][x],0,
+		ptr[y*20+x]};
+#else
 	SDL_keysym key = {spVirtualKeyboardMap[y][x],
 		(SDLKey)spVirtualKeyboardMap[y][x],(SDLMod)0,
 		ptr[y*20+x]};
-
+#endif
 	if (spVirtualLastKey.sym == key.sym)
 	{
 		spVirtualLastKeyCountDown -= steps;
@@ -1087,9 +1202,15 @@ void spHandleVirtualKeyboard( int steps )
 			char* ptr = (char*)spVirtualKeyboardMap;
 			if (spVirtualKeyboardShift)
 				ptr = (char*)spVirtualKeyboardMapShift;
+#ifdef TRNGAJE_OGS
+			SDL_Keysym key = {spVirtualKeyboardMap[spVirtualKeyboardY][spVirtualKeyboardX],
+				(SDL_Keycode)spVirtualKeyboardMap[spVirtualKeyboardY][spVirtualKeyboardX],0,
+				ptr[spVirtualKeyboardY*20+spVirtualKeyboardX]};
+#else
 			SDL_keysym key = {spVirtualKeyboardMap[spVirtualKeyboardY][spVirtualKeyboardX],
 				(SDLKey)spVirtualKeyboardMap[spVirtualKeyboardY][spVirtualKeyboardX],(SDLMod)0,
 				ptr[spVirtualKeyboardY*20+spVirtualKeyboardX]};
+#endif
 			spVirtualLastKey = key;
 		}
 		else
@@ -1141,7 +1262,11 @@ void spHandleVirtualKeyboard( int steps )
 	if (noButton)
 	{
 		spShiftStillPressed = 0;
+#ifdef TRNGAJE_OGS	
+		spVirtualLastKey.sym = (SDL_Keycode)0;
+#else	
 		spVirtualLastKey.sym = (SDLKey)0;
+#endif
 		spVirtualLastKeyCountDown = 0;
 	}
 }
@@ -1266,6 +1391,12 @@ PREFIX void spFlip( void )
 #ifdef CORE_DEBUG
 	spPrintDebug( "    Flip in" );
 #endif
+
+#ifdef TRNGAJE_OGS
+	SDL_BlitScaled(spWindow, NULL, sdlSurface, NULL);
+	SDL_UpdateWindowSurface(sdlWindow);
+#else
+
 	//The Flip
 #ifdef DOUBLEBUFFERING_BLIT
 	SDL_BlitSurface( spWindow, NULL, spScreen, NULL );
@@ -1274,6 +1405,8 @@ PREFIX void spFlip( void )
 	SDL_Flip(spScreen);
 #else
 	SDL_Flip( spWindow );
+#endif
+
 #endif
 #ifdef CORE_DEBUG
 	spPrintDebug( "    Flip out" );
@@ -1313,7 +1446,9 @@ PREFIX void spPollKeyboardInput( char *buffer, int bufferSize, Sint32 enter_key_
 		spGenericInput.keyboard.pos = strlen( buffer );
 		spGenericInput.keyboard.lastSize = 0;
 		spVirtualKeyboardMask = enter_key_mask;
+#ifndef TRNGAJE_OGS
 		SDL_EnableUNICODE( 1 );
+#endif
 	}
 	else
 	{
@@ -1328,9 +1463,13 @@ PREFIX void spStopKeyboardInput( void )
 	spGenericInput.keyboard.pos = 0;
 	spGenericInput.keyboard.lastSize = 0;
 	spVirtualKeyboardMask = 0;
+#ifndef TRNGAJE_OGS
 	spLastKey.unicode = 0;
+#endif
 	spLastKeyCountDown = 0;
+#ifndef TRNGAJE_OGS
 	SDL_EnableUNICODE( 0 );
+#endif
 }
 
 PREFIX void spSetTouchscreenEmulationButtons(int switch_button,int ok_button)
@@ -1390,7 +1529,11 @@ SDL_Surface* spLoadUncachedSurfaceZoom( const char* name, Sint32 zoom)
 	int w = spFixedToInt(zoom*surface->w);
 	int h = spFixedToInt(zoom*surface->h);
 	SDL_Surface* temp = SDL_CreateRGBSurface( SP_SURFACE_FLAGS, w, h, 16, 0xFFFF, 0xFFFF, 0xFFFF, 0 );
+#ifdef TRNGAJE_OGS
+	SDL_Surface* result = SDL_ConvertSurfaceFormat( temp, SDL_PIXELFORMAT_UNKNOWN, 0);
+#else
 	SDL_Surface* result = SDL_DisplayFormat( temp );
+#endif
 	spInternalZoomBlit(surface,0,0,surface->w,surface->h,result,0,0,result->w,result->h);
 	SDL_FreeSurface( surface );
 	SDL_FreeSurface( temp );
@@ -1571,8 +1714,13 @@ PREFIX void spClearCache( void )
 
 PREFIX SDL_Surface* spCreateSurface(int width,int height)
 {
+#ifdef TRNGAJE_OGS
+	SDL_Surface* surface = SDL_CreateRGBSurface( 0, width, height, 16, 0, 0, 0, 0 );
+	SDL_Surface* result = SDL_ConvertSurfaceFormat( surface, SDL_PIXELFORMAT_RGB565, 0 );
+#else
 	SDL_Surface* surface = SDL_CreateRGBSurface( SP_SURFACE_FLAGS, width, height, 16, 0xFFFF, 0xFFFF, 0xFFFF, 0 );
 	SDL_Surface* result = SDL_DisplayFormat( surface );
+#endif
 	SDL_FreeSurface( surface );
 	if (sp_caching)
 	{
@@ -1999,10 +2147,18 @@ PREFIX void spSetVirtualKeyboard(int state,int x,int y,int width,int height,SDL_
 
 	spInternalZoomBlit(design,0,0,(design->w/21)*20,design->h,spVirtualKeyboardInternal[0],0,0,width,height);
 	spInternalZoomBlit(design,(design->w/21)*20,design->h/3*1,(design->w/21),design->h/3,spVirtualKeyboardSelect[0],0,0,width/20,height/3);
+#ifdef TRNGAJE_OGS
+	SDL_SetColorKey( spVirtualKeyboardSelect[0], SDL_TRUE, SP_ALPHA_COLOR );
+#else
 	SDL_SetColorKey( spVirtualKeyboardSelect[0], SDL_SRCCOLORKEY, SP_ALPHA_COLOR );
+#endif
 	spInternalZoomBlit(shiftDesign,0,0,(shiftDesign->w/21)*20,shiftDesign->h,spVirtualKeyboardInternal[1],0,0,width,height);
 	spInternalZoomBlit(shiftDesign,(shiftDesign->w/21)*20,shiftDesign->h/3*1,(shiftDesign->w/21),shiftDesign->h/3,spVirtualKeyboardSelect[1],0,0,width/20,height/3);
+#ifdef TRNGAJE_OGS
+	SDL_SetColorKey( spVirtualKeyboardSelect[1], SDL_TRUE, SP_ALPHA_COLOR );
+#else
 	SDL_SetColorKey( spVirtualKeyboardSelect[1], SDL_SRCCOLORKEY, SP_ALPHA_COLOR );
+#endif
 
 	SDL_BlitSurface(spVirtualKeyboardInternal[0],NULL,spVirtualKeyboard[0],NULL);
 	SDL_BlitSurface(spVirtualKeyboardInternal[1],NULL,spVirtualKeyboard[1],NULL);

@@ -304,7 +304,11 @@ void eventHandling(SDL_Event *event)
 {
 	if (event->type == SDL_KEYDOWN)
 	{
+#ifdef TRNGAJE_OGS
+		int lastKey = event->key.keysym.sym;
+#else
 		int lastKey = event->key.keysym.unicode;
+#endif
 		char buffer[5];
 		printf("keydown event 0x%x = \"%s\" keysym=%i\n",lastKey,spFontGetUTF8FromUnicode(lastKey,buffer,5),event->key.keysym.sym);
 	}
